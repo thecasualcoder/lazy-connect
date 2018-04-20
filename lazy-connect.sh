@@ -5,7 +5,6 @@ function _lazy_connect_init() {
   echo -n "Secret Key: "
   read -s secret_key
   echo "**********"
-  mkdir -p $config_dir
   echo $secret_key > $config_dir/secret
 
   vpnNames=$(osascript <<EOF
@@ -78,6 +77,9 @@ EOF
 }
 
 function lazy-connect() {
+  config_dir=~/.config/lazy-connect
+  mkdir -p $config_dir
+
   while getopts "ih" opt; do
     case $opt in
       h)
@@ -101,7 +103,6 @@ function lazy-connect() {
     esac
   done
 
-  config_dir=~/.config/lazy-connect
   secret=$(cat $config_dir/secret)
   vpn_name=$(cat $config_dir/vpns \
     | fzf --height=10 --ansi --reverse)
