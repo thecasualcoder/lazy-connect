@@ -34,6 +34,19 @@ EOF
   cat $config_dir/vpns | nl
 }
 
+function _lazy_connect_usage() {
+  cat <<EOF
+
+USAGE:
+
+lazy-connect
+
+-i    - Initialize lazy-connect.
+        Stores the secret and VPN list to ~/.config/lazy-connect/
+-h    - Show this help
+EOF
+}
+
 function _lazy_connect() {
   vpn_name=$1
   secret_key=$2
@@ -67,7 +80,7 @@ function lazy-connect() {
   while getopts "ih" opt; do
     case $opt in
       h)
-        echo "Usage"
+        _lazy_connect_usage
         return 0
         ;;
       i)
@@ -76,12 +89,12 @@ function lazy-connect() {
         ;;
       \?)
         echo "Invalid Option: -$OPTARG."
-        echo "Usage"
+        _lazy_connect_usage
         return 1
         ;;
       :)
         echo "Option -$OPTARG requires an argument."
-        echo "Usage"
+        _lazy_connect_usage
         return 1
         ;;
     esac
