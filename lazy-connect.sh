@@ -64,16 +64,15 @@ EOF
 }
 
 function lazy-connect() {
-  while getopts "iah" opt; do
+  while getopts "ih" opt; do
     case $opt in
       h)
         echo "Usage"
+        return 0
         ;;
       i)
         _lazy_connect_init
-        ;;
-      a)
-        echo "Connect all"
+        return 0
         ;;
       \?)
         echo "Invalid Option: -$OPTARG."
@@ -87,4 +86,10 @@ function lazy-connect() {
         ;;
     esac
   done
+
+  config_dir=~/.config/lazy-connect
+  secret=$(cat $config_dir/secret)
+  vpn_name=$(cat $config_dir/vpns \
+    | fzf --height=10 --ansi --reverse)
+  [ -z "$vpn_name" ] || _lazy_connect $vpn_name $secret
 }
