@@ -39,7 +39,8 @@ function _lazy_connect_usage() {
 
 USAGE:
 
-lazy-connect
+lazy-connect - Shell function to fuzzy search an IPSec VPN by name
+               and connect to it automatically.
 
 -i    - Initialize lazy-connect.
         Stores the secret and VPN list to ~/.config/lazy-connect/
