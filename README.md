@@ -1,4 +1,4 @@
-# lazy-connect
+# lazy-connect (WIP)
 
 Shell function to fuzzy search an IPSec VPN by name and connect to it automatically.
 
