@@ -76,9 +76,32 @@ function _lazy_connect() {
 EOF
 }
 
+function _lazy_connect_update() {
+  lazy_connect_dir=~/.lazy-connect
+  seconds_in_7_days=$(echo $(((7 * 24) * 3600)))
+  commit_epoch=$(git -C $lazy_connect_dir log -1 --format=%cd --date=format:"%s")
+  now_epoch=$(date "+%s")
+  diff=$(echo $(($now_epoch - $commit_epoch)))
+  if [ $diff -ge $seconds_in_7_days ]; then
+    echo -n "Do you want to update lazy-connect?(y/n) "
+    read  input
+    case $input in
+      Y|y)
+        echo "Updating..."
+        git -C $lazy_connect_dir pull origin master
+        ;;
+      *)
+        echo "Skipping update"
+        ;;
+     esac
+  fi
+}
+
 function lazy-connect() {
   config_dir=~/.config/lazy-connect
   mkdir -p $config_dir
+
+  _lazy_connect_update
 
   while getopts "ih" opt; do
     case $opt in
