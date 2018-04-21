@@ -1,10 +1,15 @@
-# lazy-connect (WIP)
+# lazy-connect
 
 Shell function to fuzzy search an IPSec VPN by name and connect to it automatically.
 
 ## Prerequisite
 
-[`fzf`](https://github.com/junegunn/fzf) must be available in the PATH.
+1. [fzf](https://github.com/junegunn/fzf)
+2. [OATH Toolkit](https://www.nongnu.org/oath-toolkit/index.html)
+
+```
+brew install oath-toolkit fzf
+```
 
 ## Install
 
@@ -37,4 +42,4 @@ lazy-connect - Shell function to fuzzy search an IPSec VPN by name
 
 ### Warning
 
-The secret key to generate TOTP is stored as plain text in `~/.config/lazy-connect/secrete`
+The secret key to generate TOTP is stored as plain text in `~/.config/lazy-connect/secret`
