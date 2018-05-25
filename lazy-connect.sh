@@ -7,7 +7,7 @@ function _lazy_connect_init() {
   echo "**********"
   echo $secret_key > $config_dir/secret
 
-  vpnNames=$(osascript <<EOF
+  osascript <<EOF |
     tell application "System Events"
       tell process "SystemUIServer"
         set vpnMenu to (menu bar item 1 of menu bar 1 where description is "VPN")
@@ -27,8 +27,8 @@ function _lazy_connect_init() {
       end tell
     end tell
 EOF
-)
-  echo $vpnNames | sed -e "s/Connect //g; s/Disconnect //g;" | tr , "\n" | xargs -I{} echo {} > $config_dir/vpns
+tr , '\n' | sed 's/ Connect/Connect/g' > $config_dir/vpns
+
   echo "VPN List:"
   cat $config_dir/vpns | nl
 }
@@ -60,7 +60,7 @@ function _lazy_connect() {
           set vpnMenu to (menu bar item 1 of menu bar 1 where description is "VPN")
           tell vpnMenu to click
           try
-            click menu item ("Connect " & vpnName) of menu 1 of vpnMenu
+            click menu item vpnName of menu 1 of vpnMenu
             delay 1
             keystroke password
             keystroke return
