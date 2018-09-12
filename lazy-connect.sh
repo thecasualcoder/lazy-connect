@@ -1,12 +1,19 @@
-#! /bin/bash
+#!/bin/bash
+
+_lazy_connect_config_dir=~/.config/lazy-connect
+_lazy_connect_project_dir=~/.lazy-connect
 
 function _lazy_connect_init() {
-  config_dir=~/.config/lazy-connect
   echo -n "Secret Key: "
   read -s secret_key
   echo "**********"
-  echo $secret_key > $config_dir/secret
+  echo $secret_key > $_lazy_connect_config_dir/secret
+  _lazy_connect_vpn_refresh
+}
 
+function _lazy_connect_vpn_refresh() {
+  local backup_file=/tmp/lazy-connect-vpns-`date +%-H-%M-%S-%F`
+  [ -f $_lazy_connect_config_dir/vpns ] && cp $_lazy_connect_config_dir/vpns $backup_file
   osascript <<EOF |
     tell application "System Events"
       tell process "SystemUIServer"
@@ -27,10 +34,11 @@ function _lazy_connect_init() {
       end tell
     end tell
 EOF
-tr , '\n' | sed 's/ Connect/Connect/g' > $config_dir/vpns
+tr ',' '\n' | sed 's/^[[:space:]]//g' > $_lazy_connect_config_dir/vpns
 
-  echo "VPN List:"
-  cat $config_dir/vpns | nl
+  [ -f $backup_file ] && echo -e "\nDiff:\n$(diff -y $backup_file $_lazy_connect_config_dir/vpns)"
+  echo -e "\nVPN List:"
+  cat $_lazy_connect_config_dir/vpns | nl
 }
 
 function _lazy_connect_usage() {
@@ -44,6 +52,7 @@ lazy-connect - Shell function to fuzzy search an IPSec VPN by name
 -i    - Initialize lazy-connect.
         Stores the secret and VPN list to ~/.config/lazy-connect/
 -u    - Update lazy-connect
+-r    - Refresh vpn list in ~/.config/lazy-connect
 -h    - Show this help
 EOF
 }
@@ -78,18 +87,16 @@ EOF
 }
 
 function _lazy_connect_update() {
-  lazy_connect_dir=~/.lazy-connect
-  git -C $lazy_connect_dir pull origin master
+  git -C $_lazy_connect_project_dir pull origin master
   echo -e "\n\nRun the below command or restart your shell."
-  echo "$ source $lazy_connect_dir/lazy-connect.sh"
+  echo "$ source $_lazy_connect_project_dir/lazy-connect.sh"
 }
 
 function lazy-connect() {
   local OPTIND
-  config_dir=~/.config/lazy-connect
-  mkdir -p $config_dir
+  mkdir -p $_lazy_connect_config_dir
 
-  while getopts "ihu" opt; do
+  while getopts "iruh" opt; do
     case $opt in
       h)
         _lazy_connect_usage
@@ -97,6 +104,11 @@ function lazy-connect() {
         ;;
       i)
         _lazy_connect_init
+        return 0
+        ;;
+      r)
+        echo "Refreshing VPN list..."
+        _lazy_connect_vpn_refresh
         return 0
         ;;
       u)
@@ -116,8 +128,8 @@ function lazy-connect() {
     esac
   done
 
-  secret=$(cat $config_dir/secret)
-  vpn_name=$(cat $config_dir/vpns \
+  secret=$(cat $_lazy_connect_config_dir/secret)
+  vpn_name=$(cat $_lazy_connect_config_dir/vpns \
     | fzf --height=10 --ansi --reverse)
   [ -z "$vpn_name" ] || _lazy_connect "$vpn_name" "$secret"
 }
