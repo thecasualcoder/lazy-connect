@@ -36,9 +36,12 @@ function _lazy_connect_vpn_refresh() {
 EOF
 tr ',' '\n' | sed 's/^[[:space:]]//g' > $_lazy_connect_config_dir/vpns
 
-  [ -f $backup_file ] && echo -e "\nDiff:\n$(diff -y $backup_file $_lazy_connect_config_dir/vpns)"
-  echo -e "\nVPN List:"
-  cat $_lazy_connect_config_dir/vpns | nl
+  if [ -f $backup_file ]; then
+    echo -e "\nDiff:\n$(diff -y $backup_file $_lazy_connect_config_dir/vpns)"
+  else
+    echo -e "\nVPN List:"
+    cat $_lazy_connect_config_dir/vpns | nl
+  fi
 }
 
 function _lazy_connect_usage() {
