@@ -1,13 +1,19 @@
 #!/bin/bash
 
+TOTP_MODE=${LAZY_CONNECT_TOTP_GENERATOR:-oathtool}
+
 _lazy_connect_config_dir=~/.config/lazy-connect
 _lazy_connect_project_dir=~/.lazy-connect
 
 function _lazy_connect_init() {
-  echo -n "Secret Key: "
-  read -s secret_key
-  echo "**********"
-  echo $secret_key > $_lazy_connect_config_dir/secret
+  case $TOTP_MODE in
+  oathtool)
+    echo -n "Secret Key: "
+    read -s secret_key
+    echo "**********"
+    echo $secret_key >$_lazy_connect_config_dir/secret
+    ;;
+  esac
   _lazy_connect_vpn_refresh
 }
 
@@ -60,10 +66,44 @@ lazy-connect - Shell function to fuzzy search an IPSec VPN by name
 EOF
 }
 
+function _lazy_connect_get_totp() {
+  secret_key=$1
+  case $TOTP_MODE in
+  oathtool)
+    password=$(oathtool --totp --base32 $secret_key)
+    return 0
+    ;;
+  yubikey)
+    if ! [ -x "$(command -v ykman)" ]; then
+      echo 'Error: ykman tool not installed.' >&2
+      exit 1
+    fi
+    if [ -z "$LAZY_CONNECT_TOTP_QUERY" ]; then
+      echo "Error: LAZY_CONNECT_TOTP_QUERY not set"
+      exit 1
+    else
+      password=$(ykman oath code $LAZY_CONNECT_TOTP_QUERY 2>/dev/null | awk '{print $2}')
+    fi
+    ;;
+  esac
+}
+
 function _lazy_connect() {
   vpn_name=$1
-  secret_key=$2
-  password=$(oathtool --totp --base32 $secret_key)
+  _lazy_connect_get_totp $2
+
+  if [ -z "$password" ]; then
+    case $TOTP_MODE in
+    oathtool)
+      echo "Error: Unable to generate otp using oathtool"
+      return 1
+      ;;
+    yubikey)
+      echo "Error: No YubiKey found"
+      return 1
+      ;;
+    esac
+  fi
 
   osascript <<EOF
     on connectVpn(vpnName, password)
