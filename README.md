@@ -41,6 +41,19 @@ lazy-connect - Shell function to fuzzy search an IPSec VPN by name
 -h    - Show this help
 ```
 
+### YubiKey Support
+
+#### Prerequisite
+
+1. [yubikey-manager](https://github.com/Yubico/yubikey-manager)
+
+To use `TOTP` from YubiKey set the following environment variable
+
+```sh
+export LAZY_CONNECT_TOTP_GENERATOR=yubikey
+export LAZY_CONNECT_TOTP_QUERY=<name of the issuer>
+```
+
 ### Warning
 
 - The secret key to generate TOTP is stored as plain text in `~/.config/lazy-connect/secret`
