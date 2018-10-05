@@ -173,6 +173,6 @@ function lazy-connect() {
 
   secret=$(cat $_lazy_connect_config_dir/secret)
   vpn_name=$(cat $_lazy_connect_config_dir/vpns \
-    | fzf --height=10 --ansi --reverse)
+    | fzf --height=10 --ansi --reverse --query "$*" --select-1)
   [ -z "$vpn_name" ] || _lazy_connect "$vpn_name" "$secret"
 }
