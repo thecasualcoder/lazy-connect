@@ -154,9 +154,8 @@ function _lazy_disconnect() {
     end disconnectVpn
 
     disconnectVpn("$vpn_name")
-    sed "/Connect ${vpn_name}/d" $_lazy_connect_config_dir/vpns
-    sed "/Disconnect ${vpn_name}/d" $_lazy_connect_config_dir/connected_vpns | sort -u
 EOF
+  sed "/Disconnect ${vpn_name}/d" $_lazy_connect_config_dir/connected_vpns | sort -u > $_lazy_connect_config_dir/connected_vpns
 }
 
 function _lazy_connect_update() {
