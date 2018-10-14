@@ -105,10 +105,10 @@ function _lazy_connect() {
     esac
   fi
 
-  [[ "$MANUAL_MODE" -eq "true" ]]  && echo -n "$password" | pbcopy
+  [[ "$AUTOFILL" -eq "true" ]]  && echo -n "$password" | pbcopy
 
   osascript <<EOF
-    on connectVpn(vpnName, password, manual)
+    on connectVpn(vpnName, password, autofill)
       tell application "System Events"
         tell process "SystemUIServer"
           set vpnMenu to (menu bar item 1 of menu bar 1 where description is "VPN")
@@ -116,11 +116,11 @@ function _lazy_connect() {
           try
             click menu item vpnName of menu 1 of vpnMenu
             delay 1
-            if (manual is not equal to "true")
+            if (autofill is equal to "true")
               keystroke $password
               keystroke return
             end if
-            return "true"
+            return
           on error errorStr
             if errorStr does not contain "Can’t get menu item" and errorStr does not contain vpnName then
               display dialog errorStr
@@ -130,7 +130,7 @@ function _lazy_connect() {
       end tell
     end connectVpn
 
-    connectVpn("$vpn_name", "$password", "$MANUAL_MODE")
+    connectVpn("$vpn_name", "$password", "$AUTOFILL")
 EOF
 }
 
