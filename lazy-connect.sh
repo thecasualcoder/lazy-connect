@@ -105,7 +105,7 @@ function _lazy_connect() {
     esac
   fi
 
-  [[ "$AUTOFILL" -eq "true" ]]  && echo -n "$password" | pbcopy
+  [[ "$LAZY_CONNECT_AUTOFILL" -eq "true" ]]  && echo -n "$password" | pbcopy
 
   osascript <<EOF
     on connectVpn(vpnName, password, autofill)
@@ -130,7 +130,7 @@ function _lazy_connect() {
       end tell
     end connectVpn
 
-    connectVpn("$vpn_name", "$password", "$AUTOFILL")
+    connectVpn("$vpn_name", "$password", "$LAZY_CONNECT_AUTOFILL")
 EOF
 }
 

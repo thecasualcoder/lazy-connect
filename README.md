@@ -41,6 +41,15 @@ lazy-connect - Shell function to fuzzy search an IPSec VPN by name
 -h    - Show this help
 ```
 
+## Configuration
+
+* The connection to VPN could be made with filling password automatically. To enable autofill set `LAZY_CONNECT_AUTOFILL` variable to true.
+
+```
+export LAZY_CONNECT_AUTOFILL="true"
+```
+When disabled, the password is copied to clipboard, and you can use it manually when it prompts for password.
+
 ### YubiKey Support
 
 #### Prerequisite
