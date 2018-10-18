@@ -135,11 +135,19 @@ function _lazy_connect_update() {
   echo "$ source $_lazy_connect_project_dir/lazy-connect.sh"
 }
 
+function _lazy_connect_all() {
+  secret=$(cat $_lazy_connect_config_dir/secret)
+  while read vpn_name; do
+    echo "Connecting to $vpn_name"
+    [ -z "$vpn_name" ] || _lazy_connect "$vpn_name" "$secret"
+  done < "$_lazy_connect_config_dir/vpns"
+}
+
 function lazy-connect() {
   local OPTIND
   mkdir -p $_lazy_connect_config_dir
 
-  while getopts "iruh" opt; do
+  while getopts "iruah" opt; do
     case $opt in
       h)
         _lazy_connect_usage
@@ -156,6 +164,10 @@ function lazy-connect() {
         ;;
       u)
         _lazy_connect_update
+        return 0
+        ;;
+      a)
+        _lazy_connect_all
         return 0
         ;;
       \?)

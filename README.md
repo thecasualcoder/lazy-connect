@@ -38,6 +38,7 @@ lazy-connect - Shell function to fuzzy search an IPSec VPN by name
 -i    - Initialize lazy-connect.
         Stores the secret and VPN list to ~/.config/lazy-connect/
 -r    - refresh vpn list in ~/.config/lazy-connect
+-a    - Connect to all VPNs  
 -h    - Show this help
 ```
 
