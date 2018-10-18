@@ -117,6 +117,7 @@ function _lazy_connect() {
             keystroke password
             keystroke return
           on error errorStr
+            key code 53
             if errorStr does not contain "Can’t get menu item" and errorStr does not contain vpnName then
               display dialog errorStr
             end if
