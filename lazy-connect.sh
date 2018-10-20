@@ -13,6 +13,7 @@ function _lazy_connect_init() {
     echo "**********"
 
     echo 'Storing secret in keychain...'
+    security delete-generic-password -a lazy-connect -s lazy-connect &> /dev/null
     security add-generic-password -a lazy-connect -p "$secret_key" -s lazy-connect
     ;;
   esac
