@@ -13,6 +13,8 @@ function _lazy_connect_init() {
     echo "**********"
 
     echo 'Storing secret in keychain...'
+    old_secret=~/.config/lazy-connect/secret
+    [ -f "$old_secret" ] && rm "$old_secret"
     security delete-generic-password -a lazy-connect -s lazy-connect &> /dev/null
     security add-generic-password -a lazy-connect -p "$secret_key" -s lazy-connect
     ;;
