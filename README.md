@@ -56,7 +56,8 @@ export LAZY_CONNECT_TOTP_QUERY=<name of the issuer>
 
 ### Warning
 
-- The secret key to generate TOTP is stored as plain text in `~/.config/lazy-connect/secret`
+- The secret key to generate TOTP is stored in Keychain on Mac under default `login` keychain. You may need to
+  enter your login password to allow access to Keychain.
 - You need to add your Termainal emulator app that invokes the function to `Security & Privacy -> Accessibility`. It is
   necesssary because the script interacts with the UI. There are other ways via CLI to avoid UI interaction but
   they are all broken in OS X 10.12+.

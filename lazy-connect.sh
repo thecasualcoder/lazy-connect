@@ -11,7 +11,9 @@ function _lazy_connect_init() {
     echo -n "Secret Key: "
     read -s secret_key
     echo "**********"
-    echo $secret_key >$_lazy_connect_config_dir/secret
+
+    echo 'Storing secret in keychain.'
+    security add-generic-password -a lazy-connect -p "$secret_key" -s lazy-connect
     ;;
   esac
   _lazy_connect_vpn_refresh
@@ -171,7 +173,13 @@ function lazy-connect() {
     esac
   done
 
-  secret=$(cat $_lazy_connect_config_dir/secret)
+  local secret=$(security find-generic-password -a lazy-connect -w 2> /dev/null | tr -d '\n')
+  if [ -z "$secret" ];
+  then
+    echo "Secret not found in keychain. Initialize lazy-connect and try again."
+    return 1
+  fi
+
   vpn_name=$(cat $_lazy_connect_config_dir/vpns \
     | fzf --height=10 --ansi --reverse --query "$*" --select-1)
   [ -z "$vpn_name" ] || _lazy_connect "$vpn_name" "$secret"
