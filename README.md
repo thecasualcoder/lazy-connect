@@ -4,8 +4,8 @@ Shell function to fuzzy search an IPSec VPN by name and connect to it automatica
 
 ## Prerequisite
 
-1. [fzf](https://github.com/junegunn/fzf)
-2. [OATH Toolkit](https://www.nongnu.org/oath-toolkit/index.html)
+1.  [fzf](https://github.com/junegunn/fzf)
+2.  [OATH Toolkit](https://www.nongnu.org/oath-toolkit/index.html)
 
 ```
 brew install oath-toolkit fzf
@@ -45,7 +45,7 @@ lazy-connect - Shell function to fuzzy search an IPSec VPN by name
 
 #### Prerequisite
 
-1. [yubikey-manager](https://github.com/Yubico/yubikey-manager)
+1.  [yubikey-manager](https://github.com/Yubico/yubikey-manager)
 
 To use `TOTP` from YubiKey set the following environment variable
 
@@ -54,10 +54,10 @@ export LAZY_CONNECT_TOTP_GENERATOR=yubikey
 export LAZY_CONNECT_TOTP_QUERY=<name of the issuer>
 ```
 
-### Warning
+### Note
 
-- The secret key to generate TOTP is stored in Keychain on Mac under default `login` keychain. You may need to
+* The secret key to generate TOTP is stored in Keychain on Mac under default `login` keychain. You may need to
   enter your login password to allow access to Keychain.
-- You need to add your Termainal emulator app that invokes the function to `Security & Privacy -> Accessibility`. It is
+* You need to add your Termainal emulator app that invokes the function to `Security & Privacy -> Accessibility`. It is
   necesssary because the script interacts with the UI. There are other ways via CLI to avoid UI interaction but
   they are all broken in OS X 10.12+.
