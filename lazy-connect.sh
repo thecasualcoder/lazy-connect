@@ -12,7 +12,7 @@ function _lazy_connect_init() {
     read -s secret_key
     echo "**********"
 
-    echo 'Storing secret in keychain.'
+    echo 'Storing secret in keychain...'
     security add-generic-password -a lazy-connect -p "$secret_key" -s lazy-connect
     ;;
   esac
@@ -44,6 +44,7 @@ function _lazy_connect_vpn_refresh() {
 EOF
 tr ',' '\n' | sed 's/^[[:space:]]//g' > $_lazy_connect_config_dir/vpns
 
+  echo "Storing the VPN list..."
   if [ -f $backup_file ]; then
     echo -e "\nDiff:\n$(diff -y $backup_file $_lazy_connect_config_dir/vpns)"
   else
@@ -60,8 +61,7 @@ USAGE:
 lazy-connect - Shell function to fuzzy search an IPSec VPN by name
                and connect to it automatically.
 
--i    - Initialize lazy-connect.
-        Stores the secret and VPN list to ~/.config/lazy-connect/
+-i    - Initialize lazy-connect. Stores the TOTP secret and VPN list
 -u    - Update lazy-connect
 -r    - Refresh vpn list in ~/.config/lazy-connect
 -h    - Show this help
@@ -81,7 +81,7 @@ function _lazy_connect_get_totp() {
       exit 1
     fi
     if [ -z "$LAZY_CONNECT_TOTP_QUERY" ]; then
-      echo "Error: LAZY_CONNECT_TOTP_QUERY not set"
+      echo "Error: LAZY_CONNECT_TOTP_QUERY not set."
       exit 1
     else
       password=$(ykman oath code $LAZY_CONNECT_TOTP_QUERY 2>/dev/null | awk '{print $2}')
@@ -97,11 +97,11 @@ function _lazy_connect() {
   if [ -z "$password" ]; then
     case $TOTP_MODE in
     oathtool)
-      echo "Error: Unable to generate otp using oathtool"
+      echo "Error: Unable to generate otp using oathtool."
       return 1
       ;;
     yubikey)
-      echo "Error: No YubiKey found"
+      echo "Error: No YubiKey found."
       return 1
       ;;
     esac
