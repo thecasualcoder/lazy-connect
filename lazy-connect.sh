@@ -68,6 +68,7 @@ lazy-connect - Shell function to fuzzy search an IPSec VPN by name
 -u    - Update lazy-connect
 -r    - Refresh vpn list in ~/.config/lazy-connect
 -h    - Show this help
+-d    - Disconnect a connected VPN
 EOF
 }
 
@@ -110,7 +111,7 @@ function _lazy_connect() {
     esac
   fi
 
-  osascript <<EOF
+  result=$(osascript <<EOF
     on connectVpn(vpnName, password)
       tell application "System Events"
         tell process "SystemUIServer"
@@ -121,6 +122,7 @@ function _lazy_connect() {
             delay 1
             keystroke password
             keystroke return
+            return "true"
           on error errorStr
             if errorStr does not contain "Can’t get menu item" and errorStr does not contain vpnName then
               display dialog errorStr
@@ -132,6 +134,33 @@ function _lazy_connect() {
 
     connectVpn("$vpn_name", "$password")
 EOF
+)
+  [[ $result -eq "true" ]] && echo $vpn_name | sed 's/Connect/Disconnect/g' >> "$_lazy_connect_config_dir/connected_vpns"
+}
+
+function _lazy_disconnect() {
+  vpn_name=$1
+
+  osascript <<EOF
+    on disconnectVpn(vpnName)
+      tell application "System Events"
+        tell process "SystemUIServer"
+          set vpnMenu to (menu bar item 1 of menu bar 1 where description is "VPN")
+          tell vpnMenu to click
+          try
+            click menu item vpnName of menu 1 of vpnMenu
+          on error errorStr
+            if errorStr does not contain "Can’t get menu item" and errorStr does not contain vpnName then
+              display dialog errorStr
+            end if
+          end try
+        end tell
+      end tell
+    end disconnectVpn
+
+    disconnectVpn("$vpn_name")
+EOF
+  sed "/Disconnect ${vpn_name}/d" $_lazy_connect_config_dir/connected_vpns | sort -u > $_lazy_connect_config_dir/connected_vpns
 }
 
 function _lazy_connect_update() {
@@ -144,7 +173,7 @@ function lazy-connect() {
   local OPTIND
   mkdir -p $_lazy_connect_config_dir
 
-  while getopts "iruh" opt; do
+  while getopts "iruhd" opt; do
     case $opt in
       h)
         _lazy_connect_usage
@@ -157,6 +186,11 @@ function lazy-connect() {
       r)
         echo "Refreshing VPN list..."
         _lazy_connect_vpn_refresh
+        return 0
+        ;;
+      d)
+        vpn_name=$(cat $_lazy_connect_config_dir/connected_vpns | fzf --height=10 --ansi --reverse)
+        _lazy_disconnect "$vpn_name"
         return 0
         ;;
       u)
