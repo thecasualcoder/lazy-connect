@@ -186,3 +186,5 @@ function lazy-connect() {
     fzf --height=10 --ansi --reverse --query "$*" --select-1)
   [ -z "$vpn_name" ] || _lazy_connect "$vpn_name" "$secret"
 }
+
+lazy-connect "$@"
