@@ -58,16 +58,17 @@ tr ',' '\n' | sed 's/^[[:space:]]//g' > $_lazy_connect_config_dir/vpns
 
 function _lazy_connect_usage() {
   cat <<EOF
+Usage: lazy-connect [options]
 
-USAGE:
+Shell function to fuzzy search an IPSec VPN by name
+      and connect to it automatically.
 
-lazy-connect - Shell function to fuzzy search an IPSec VPN by name
-               and connect to it automatically.
+Options:
 
--i    - Initialize lazy-connect. Stores the TOTP secret and VPN list
--u    - Update lazy-connect
--r    - Refresh vpn list in ~/.config/lazy-connect
--h    - Show this help
+-i      Initialize lazy-connect. Stores the TOTP secret and VPN list
+-u      Update lazy-connect
+-r      Refresh vpn list in ~/.config/lazy-connect
+-h      Show this help
 EOF
 }
 
