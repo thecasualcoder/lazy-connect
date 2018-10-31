@@ -93,6 +93,13 @@ function _lazy_connect_get_totp() {
   esac
 }
 
+function _lazy_disconnect_all(){
+  echo "Disconnecting..."
+  connected_vpns=$(osascript ${_lazy_connect_project_dir}/connected_vpns.scpt)
+  vpns=$(echo $connected_vpns | tr ',' '\n' | sed 's/^[[:space:]]//g')
+  echo -n $vpns | xargs -L 1 -I {} /bin/bash -c "osascript ${_lazy_connect_project_dir}/click_vpn.scpt '{}'"
+}
+
 function _lazy_connect() {
   vpn_name=$1
   _lazy_connect_get_totp $2
@@ -110,8 +117,10 @@ function _lazy_connect() {
     esac
   fi
 
+  [[ "$MANUAL_MODE" -eq "true" ]]  && echo -n "$password" | pbcopy
+
   osascript <<EOF
-    on connectVpn(vpnName, password)
+    on connectVpn(vpnName, password, manual)
       tell application "System Events"
         tell process "SystemUIServer"
           set vpnMenu to (menu bar item 1 of menu bar 1 where description is "VPN")
@@ -119,8 +128,11 @@ function _lazy_connect() {
           try
             click menu item vpnName of menu 1 of vpnMenu
             delay 1
-            keystroke password
-            keystroke return
+            if (manual is not equal to "true")
+              keystroke $password
+              keystroke return
+            end if
+            return "true"
           on error errorStr
             if errorStr does not contain "Can’t get menu item" and errorStr does not contain vpnName then
               display dialog errorStr
@@ -130,7 +142,7 @@ function _lazy_connect() {
       end tell
     end connectVpn
 
-    connectVpn("$vpn_name", "$password")
+    connectVpn("$vpn_name", "$password", "$MANUAL_MODE")
 EOF
 }
 
@@ -144,7 +156,7 @@ function lazy-connect() {
   local OPTIND
   mkdir -p $_lazy_connect_config_dir
 
-  while getopts "iruh" opt; do
+  while getopts "iqruh" opt; do
     case $opt in
       h)
         _lazy_connect_usage
@@ -163,6 +175,11 @@ function lazy-connect() {
         _lazy_connect_update
         return 0
         ;;
+      q)
+        _lazy_disconnect_all
+        return 0
+        ;;
+
       \?)
         echo "Invalid Option: -$OPTARG."
         _lazy_connect_usage
