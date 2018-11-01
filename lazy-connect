@@ -15,7 +15,7 @@ function _lazy_connect_init() {
     echo 'Storing secret in keychain...'
     old_secret=~/.config/lazy-connect/secret
     [ -f "$old_secret" ] && rm "$old_secret"
-    security delete-generic-password -a lazy-connect -s lazy-connect &> /dev/null
+    security delete-generic-password -a lazy-connect -s lazy-connect &>/dev/null
     security add-generic-password -a lazy-connect -p "$secret_key" -s lazy-connect
     ;;
   esac
@@ -23,7 +23,7 @@ function _lazy_connect_init() {
 }
 
 function _lazy_connect_vpn_refresh() {
-  local backup_file=/tmp/lazy-connect-vpns-`date +%-H-%M-%S-%F`
+  local backup_file=/tmp/lazy-connect-vpns-$(date +%-H-%M-%S-%F)
   [ -f $_lazy_connect_config_dir/vpns ] && cp $_lazy_connect_config_dir/vpns $backup_file
   osascript <<EOF |
     tell application "System Events"
@@ -45,7 +45,7 @@ function _lazy_connect_vpn_refresh() {
       end tell
     end tell
 EOF
-tr ',' '\n' | sed 's/^[[:space:]]//g' > $_lazy_connect_config_dir/vpns
+    tr ',' '\n' | sed 's/^[[:space:]]//g' >$_lazy_connect_config_dir/vpns
 
   echo "Storing the VPN list..."
   if [ -f $backup_file ]; then
@@ -146,44 +146,45 @@ function lazy-connect() {
 
   while getopts "iruh" opt; do
     case $opt in
-      h)
-        _lazy_connect_usage
-        return 0
-        ;;
-      i)
-        _lazy_connect_init
-        return 0
-        ;;
-      r)
-        echo "Refreshing VPN list..."
-        _lazy_connect_vpn_refresh
-        return 0
-        ;;
-      u)
-        _lazy_connect_update
-        return 0
-        ;;
-      \?)
-        echo "Invalid Option: -$OPTARG."
-        _lazy_connect_usage
-        return 1
-        ;;
-      :)
-        echo "Option -$OPTARG requires an argument."
-        _lazy_connect_usage
-        return 1
-        ;;
+    h)
+      _lazy_connect_usage
+      return 0
+      ;;
+    i)
+      _lazy_connect_init
+      return 0
+      ;;
+    r)
+      echo "Refreshing VPN list..."
+      _lazy_connect_vpn_refresh
+      return 0
+      ;;
+    u)
+      _lazy_connect_update
+      return 0
+      ;;
+    \?)
+      echo "Invalid Option: -$OPTARG."
+      _lazy_connect_usage
+      return 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument."
+      _lazy_connect_usage
+      return 1
+      ;;
     esac
   done
 
-  local secret=$(security find-generic-password -a lazy-connect -w 2> /dev/null | tr -d '\n')
-  if [ -z "$secret" ];
-  then
+  local secret=$(security find-generic-password -a lazy-connect -w 2>/dev/null | tr -d '\n')
+  if [ -z "$secret" ]; then
     echo "Secret not found in keychain. Initialize lazy-connect and try again."
     return 1
   fi
 
-  vpn_name=$(cat $_lazy_connect_config_dir/vpns \
-    | fzf --height=10 --ansi --reverse --query "$*" --select-1)
+  vpn_name=$(cat $_lazy_connect_config_dir/vpns |
+    fzf --height=10 --ansi --reverse --query "$*" --select-1)
   [ -z "$vpn_name" ] || _lazy_connect "$vpn_name" "$secret"
 }
+
+lazy-connect "$@"
