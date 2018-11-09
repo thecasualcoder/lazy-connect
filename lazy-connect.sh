@@ -58,6 +58,7 @@ USAGE:
 lazy-connect - Shell function to fuzzy search an IPSec VPN by name
                and connect to it automatically.
 
+-n    - Connect to VPN by autofilling password
 -i    - Initialize lazy-connect.
         Stores the secret and VPN list to ~/.config/lazy-connect/
 -u    - Update lazy-connect
@@ -67,7 +68,7 @@ EOF
 }
 
 function _lazy_connect_get_totp() {
-  secret_key=$1
+  local secret_key=$1
   case $TOTP_MODE in
   oathtool)
     password=$(oathtool --totp --base32 $secret_key)
@@ -89,7 +90,7 @@ function _lazy_connect_get_totp() {
 }
 
 function _lazy_connect() {
-  vpn_name=$1
+  local vpn_name=$1
   _lazy_connect_get_totp $2
 
   if [ -z "$password" ]; then
@@ -105,7 +106,11 @@ function _lazy_connect() {
     esac
   fi
 
-  [[ "$LAZY_CONNECT_AUTOFILL" -eq "true" ]]  && echo -n "$password" | pbcopy
+  if [ "$3" = "true" ]; then
+    local _lazy_connect_auto_fill_pwd="true"
+  else
+    echo "$password" | pbcopy
+  fi
 
   osascript <<EOF
     on connectVpn(vpnName, password, autofill)
@@ -130,7 +135,7 @@ function _lazy_connect() {
       end tell
     end connectVpn
 
-    connectVpn("$vpn_name", "$password", "$LAZY_CONNECT_AUTOFILL")
+    connectVpn("$vpn_name", "$password", "$_lazy_connect_auto_fill_pwd")
 EOF
 }
 
@@ -144,7 +149,7 @@ function lazy-connect() {
   local OPTIND
   mkdir -p $_lazy_connect_config_dir
 
-  while getopts "iruh" opt; do
+  while getopts "iruhn" opt; do
     case $opt in
       h)
         _lazy_connect_usage
@@ -161,6 +166,12 @@ function lazy-connect() {
         ;;
       u)
         _lazy_connect_update
+        return 0
+        ;;
+      n)
+        local _secret=$(cat $_lazy_connect_config_dir/secret)
+        local _vpn_name=$(cat $_lazy_connect_config_dir/vpns | fzf --height=10 --ansi --reverse --select-1)
+        _lazy_connect "$_vpn_name" "$_secret" true
         return 0
         ;;
       \?)
