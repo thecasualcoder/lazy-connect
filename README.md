@@ -33,8 +33,10 @@ sudo ln -s ~/.lazy-connect/lazy-connect /usr/local/bin/lazy-connect
 lazy-connect - Shell function to fuzzy search an IPSec VPN by name
                and connect to it automatically.
 
--i    - Initialize lazy-connect.
+-n    - Connect to VPN by autofilling password
+-i    - Initialize lazy-connect. Stores the TOTP secret and VPN list
         Stores the secret and VPN list to ~/.config/lazy-connect/
+-u    - Update lazy-connect
 -r    - refresh vpn list in ~/.config/lazy-connect
 -h    - Show this help
 ```
