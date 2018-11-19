@@ -118,7 +118,7 @@ function _lazy_connect() {
           tell vpnMenu to click
           try
             click menu item vpnName of menu 1 of vpnMenu
-            delay 1
+            delay 2
             keystroke password
             keystroke return
           on error errorStr
