@@ -65,7 +65,6 @@ lazy-connect - Shell function to fuzzy search an IPSec VPN by name
                and connect to it automatically.
 
 -i    - Initialize lazy-connect. Stores the TOTP secret and VPN list
--u    - Update lazy-connect
 -r    - Refresh vpn list in ~/.config/lazy-connect
 -h    - Show this help
 EOF
@@ -134,12 +133,6 @@ function _lazy_connect() {
 EOF
 }
 
-function _lazy_connect_update() {
-  git -C $_lazy_connect_project_dir pull origin master
-  echo -e "\n\nRun the below command or restart your shell."
-  echo "$ source $_lazy_connect_project_dir/lazy-connect.sh"
-}
-
 function lazy-connect() {
   local OPTIND
   mkdir -p $_lazy_connect_config_dir
@@ -157,10 +150,6 @@ function lazy-connect() {
     r)
       echo "Refreshing VPN list..."
       _lazy_connect_vpn_refresh
-      return 0
-      ;;
-    u)
-      _lazy_connect_update
       return 0
       ;;
     \?)
