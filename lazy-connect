@@ -147,7 +147,7 @@ function lazy-connect() {
   local OPTIND
   mkdir -p $_lazy_connect_config_dir
 
-  while getopts "iruhn" opt; do
+  while getopts "irhn" opt; do
     case $opt in
       h)
         _lazy_connect_usage
@@ -163,7 +163,7 @@ function lazy-connect() {
         return 0
         ;;
       n)
-        local _secret=$(cat $_lazy_connect_config_dir/secret)
+        local _secret=$(security find-generic-password -a lazy-connect -w 2>/dev/null | tr -d '\n')
         local _vpn_name=$(cat $_lazy_connect_config_dir/vpns | fzf --height=10 --ansi --reverse --select-1)
         _lazy_connect "$_vpn_name" "$_secret" true
         return 0
