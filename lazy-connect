@@ -113,7 +113,7 @@ function _lazy_connect() {
   if [ "$3" = "true" ]; then
     local _lazy_connect_auto_fill_pwd="true"
   else
-    echo "$password" | pbcopy
+    echo -n "$password" | pbcopy
   fi
 
   osascript <<EOF
