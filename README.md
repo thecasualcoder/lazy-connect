@@ -16,14 +16,14 @@ brew install oath-toolkit fzf
 ### Using Homebrew
 
 ```
-brew tap arunvelsriram/stable
+brew tap thecasualcoder/stable
 brew install lazy-connect
 ```
 
 ### Manual
 
 ```
-git clone https://github.com/arunvelsriram/lazy-connect.git ~/.lazy-connect
+git clone https://github.com/thecasualcoder/lazy-connect.git ~/.lazy-connect
 sudo ln -s ~/.lazy-connect/lazy-connect /usr/local/bin/lazy-connect
 ```
 
