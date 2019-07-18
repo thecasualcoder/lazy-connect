@@ -95,6 +95,8 @@ function _lazy_connect_get_totp() {
 
 function _lazy_connect() {
   vpn_name=$1
+  osx_vpn_name="${vpn_name/Connect /}, Not Connected"
+
   _lazy_connect_get_totp $2
   local autofill=$3
 
@@ -115,27 +117,46 @@ function _lazy_connect() {
 
   osascript <<EOF
     on connectVpn(vpnName, password, autofill)
-      tell application "System Events"
-        tell process "SystemUIServer"
-          set vpnMenu to (menu bar item 1 of menu bar 1 where description is "VPN")
-          tell vpnMenu to click
-          try
-            click menu item vpnName of menu 1 of vpnMenu
-            if autofill is equal to "true" then
-              delay 2
-              keystroke password
-              keystroke return
-            end if
-          on error errorStr
-            if errorStr does not contain "Can’t get menu item" and errorStr does not contain vpnName then
-              display dialog errorStr
-            end if
-          end try
+      tell application "System Preferences"
+        reveal pane "Network"
+        activate
+
+        tell application "System Events"
+            tell process "System Preferences"
+                tell window 1
+                    repeat with r in rows of table 1 of scroll area 1
+
+                        if (value of attribute "AXValue" of static text 1 of r as string) is equal to "$osx_vpn_name" then
+                            select r
+                        end if
+                    end repeat
+
+                    tell group 1
+                        click button "Authentication Settings…"
+                    end tell
+
+                    tell sheet 1
+                        set focused of text field 2 to true
+                        set value of text field 2 to "$password"
+                        click button "Ok"
+                    end tell
+
+                    click button "Apply"
+
+            delay 1
+                    tell group 1
+                        click button "Connect"
+            end tell
+
+                end tell
+            end tell
         end tell
-      end tell
+
+        quit
+    end tell
     end connectVpn
 
-    connectVpn("$vpn_name", "$password", "$autofill")
+    connectVpn("$osx_vpn_name", "$password", "$autofill")
 EOF
 }
 
