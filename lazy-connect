@@ -95,7 +95,7 @@ function _lazy_connect_get_totp() {
 
 function _lazy_connect() {
   vpn_name=$1
-  osx_vpn_name="${vpn_name/Connect /}, Not Connected"
+  osx_vpn_name="${vpn_name/Connect /}"
 
   _lazy_connect_get_totp $2
   local autofill=$3
@@ -126,28 +126,36 @@ function _lazy_connect() {
                 tell window 1
                     repeat with r in rows of table 1 of scroll area 1
 
-                        if (value of attribute "AXValue" of static text 1 of r as string) is equal to "$osx_vpn_name" then
+                        if (value of attribute "AXValue" of static text 1 of r as string) contains "$osx_vpn_name" then
                             select r
                         end if
                     end repeat
 
+                    set canConnect to false
                     tell group 1
-                        click button "Authentication Settings…"
+                      set canConnect to button "Connect" exists
                     end tell
 
-                    tell sheet 1
-                        set focused of text field 2 to true
-                        set value of text field 2 to "$password"
-                        click button "Ok"
-                    end tell
+                    if canConnect then
+                      tell group 1
+                          click button "Authentication Settings…"
+                      end tell
 
-                    click button "Apply"
+                      tell sheet 1
+                          set focused of text field 2 to true
+                          set value of text field 2 to "$password"
+                          click button "Ok"
+                      end tell
 
-            delay 1
-                    tell group 1
+                      click button "Apply"
+
+                      delay 1
+                      tell group 1
                         click button "Connect"
-            end tell
-
+                      end tell
+                    else
+                      log "Already connected to the selected VPN"
+                    end if
                 end tell
             end tell
         end tell
