@@ -139,6 +139,81 @@ function _lazy_connect() {
 EOF
 }
 
+function _lazy_connect_mojave() {
+  vpn_name=$1
+  osx_vpn_name="${vpn_name/Connect /}, Not Connected"
+
+  _lazy_connect_get_totp $2
+  local autofill=$3
+
+  if [ -z "$password" ]; then
+    case $TOTP_MODE in
+    oathtool)
+      echo "Error: Unable to generate otp using oathtool."
+      return 1
+      ;;
+    yubikey)
+      echo "Error: No YubiKey found."
+      return 1
+      ;;
+    esac
+  elif [ "$autofill" == "false" ]; then
+    echo -n "$password" | pbcopy
+  fi
+
+  osascript <<EOF
+    on connectVpn(vpnName, password, autofill)
+      tell application "System Preferences"
+        reveal pane "Network"
+        activate
+
+        tell application "System Events"
+            tell process "System Preferences"
+                tell window 1
+                    repeat with r in rows of table 1 of scroll area 1
+
+                        if (value of attribute "AXValue" of static text 1 of r as string) is equal to "$osx_vpn_name" then
+                            select r
+                        end if
+                    end repeat
+
+                    tell group 1
+                        click button "Authentication Settings…"
+                    end tell
+
+                    tell sheet 1
+                        set focused of text field 2 to true
+                        set value of text field 2 to "$password"
+                        click button "Ok"
+                    end tell
+
+                    click button "Apply"
+
+            delay 1
+                    tell group 1
+                        click button "Connect"
+            end tell
+
+                end tell
+            end tell
+        end tell
+
+        quit
+    end tell
+    end connectVpn
+
+    connectVpn("$osx_vpn_name", "$password", "$autofill")
+EOF
+}
+
+version_lte() {
+    [  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
+}
+
+version_lt() {
+    [ "$1" = "$2" ] && return 1 || version_lte $1 $2
+}
+
 function lazy-connect() {
   local OPTIND
   local autofill="true"
@@ -184,7 +259,15 @@ function lazy-connect() {
 
   vpn_name=$(cat $_lazy_connect_config_dir/vpns |
     fzf --height=10 --ansi --reverse --query "$*" --select-1)
-  [ -z "$vpn_name" ] || _lazy_connect "$vpn_name" "$secret" "$autofill"
+
+  mac_version=$(sw_vers -productVersion)
+  is_less_than_mojave=$(version_lt $mac_version 10.14 && echo "yes" || echo "no")
+  if [ $is_less_than_mojave = "yes" ]; then
+    [ -z "$vpn_name" ] || _lazy_connect "$vpn_name" "$secret" "$autofill"
+  else
+    [ -z "$vpn_name" ] || _lazy_connect_mojave "$vpn_name" "$secret" "$autofill"
+  fi
+
 }
 
 lazy-connect "$@"
