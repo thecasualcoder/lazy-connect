@@ -66,6 +66,7 @@ lazy-connect - Shell function to fuzzy search an IPSec VPN by name
 
 -i    - Initialize lazy-connect. Stores the TOTP secret and VPN list.
 -r    - Refresh vpn list in ~/.config/lazy-connect .
+-y    - Select the last selected VPN.
 -n    - Do not fill the password automatically. Instead copy the password to clipboard.
 -h    - Show this help.
 EOF
@@ -191,11 +192,13 @@ function _lazy_connect_mojave() {
                 tell group 1
                   click button "Connect"
                 end tell
+                log "Connected"
               else if (value of attribute "AXValue" of static text 1 of r as string) is equal to connectedVpnName then
                 log "Disconnecting from vpn " & vpnName
                 tell group 1
                   click button "Disconnect"
                 end tell
+                log "Disconnected"
               else
                 log "Couldn't connect or disconnect the VPN, didn't find any exact match. The network found was: "
                 log (value of attribute "AXValue" of static text 1 of r as string)
@@ -218,12 +221,24 @@ version_lt() {
     [ "$1" = "$2" ] && return 1 || version_lte $1 $2
 }
 
+_get_last_selected_vpn() {
+  if [ -f $_lazy_connect_config_dir/last_vpn ]; then
+    last_vpn=$(cat $_lazy_connect_config_dir/last_vpn)
+  fi
+  if [ -z "$last_vpn" ]; then
+    echo "0"
+  else
+    echo $last_vpn
+  fi
+}
+
 function lazy-connect() {
   local OPTIND
   local autofill="true"
+  local choose_last="false"
   mkdir -p $_lazy_connect_config_dir
 
-  while getopts "irnh" opt; do
+  while getopts "irnhy" opt; do
     case $opt in
     h)
       _lazy_connect_usage
@@ -240,6 +255,10 @@ function lazy-connect() {
       ;;
     n)
       autofill="false"
+      shift $((OPTIND - 1))
+      ;;
+    y)
+      choose_last="true"
       shift $((OPTIND - 1))
       ;;
     \?)
@@ -261,8 +280,13 @@ function lazy-connect() {
     return 1
   fi
 
-  vpn_name=$(cat $_lazy_connect_config_dir/vpns |
-    fzf --height=10 --ansi --reverse --query "$*" --select-1)
+  last_vpn=$(_get_last_selected_vpn)
+  if [ "true" == "$choose_last" -a "0" != "$last_vpn" ]; then
+      vpn_name=$last_vpn
+  else
+    vpn_name=$(cat $_lazy_connect_config_dir/vpns |
+      fzf --height=10 --ansi --reverse --query "$*" --select-1)
+  fi
 
   mac_version=$(sw_vers -productVersion)
   is_less_than_mojave=$(version_lt $mac_version 10.14 && echo "yes" || echo "no")
@@ -271,7 +295,7 @@ function lazy-connect() {
   else
     [ -z "$vpn_name" ] || _lazy_connect_mojave "$vpn_name" "$secret" "$autofill"
   fi
-
+  echo -n $vpn_name > $_lazy_connect_config_dir/last_vpn
 }
 
 lazy-connect "$@"
