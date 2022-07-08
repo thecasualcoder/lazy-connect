@@ -170,8 +170,8 @@ function _lazy_connect_mojave() {
         tell application "System Events"
             tell process "System Preferences"
                 tell window 1
+                    delay 1
                     repeat with r in rows of table 1 of scroll area 1
-
                         if (value of attribute "AXValue" of static text 1 of r as string) is equal to "$osx_vpn_name" then
                             select r
                         end if
