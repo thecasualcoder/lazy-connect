@@ -231,7 +231,8 @@ function _lazy_connect_ventura(){
   osascript -l JavaScript > /dev/null <<-EOF
     function connectVpn(vpnName, password, autofill) {
       // Reveal System Settings
-      Application("System Settings").reveal()
+      const app = Application("System Settings")
+      app.reveal()
       const settings = Application("System Events").applicationProcesses.byName("System Settings")
 
       // Focus on it
@@ -289,7 +290,7 @@ function _lazy_connect_ventura(){
         }
       }
 
-      settings.quit()
+      app.quit()
     }
     connectVpn("$osx_vpn_name", "$password", "$autofill")
 EOF
