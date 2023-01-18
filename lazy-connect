@@ -277,7 +277,7 @@ function _lazy_connect_ventura(){
         const lastPass = passwordField.value()
         if (lastPass === password) {
           const cancelButton = dialogArea.buttons[1]
-          okButton.click()
+          cancelButton.click()
         } else {
           passwordField.focused = true
           passwordField.value = password
