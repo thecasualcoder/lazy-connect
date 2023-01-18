@@ -206,6 +206,95 @@ function _lazy_connect_mojave() {
 EOF
 }
 
+function _lazy_connect_ventura(){
+  vpn_name=$1
+  osx_vpn_name="${vpn_name/Connect /}"
+  
+  _lazy_connect_get_totp $2
+  local autofill=$3
+
+  if [ -z "$password" ]; then
+    case $TOTP_MODE in
+    oathtool)
+      echo "Error: Unable to generate otp using oathtool."
+      return 1
+      ;;
+    yubikey)
+      echo "Error: No YubiKey found."
+      return 1
+      ;;
+    esac
+  elif [ "$autofill" == "false" ]; then
+    echo -n "$password" | pbcopy
+  fi
+  
+  osascript -l JavaScript > /dev/null <<-EOF
+    function connectVpn(vpnName, password, autofill) {
+      // Reveal System Settings
+      Application("System Settings").reveal()
+      const settings = Application("System Events").applicationProcesses.byName("System Settings")
+
+      // Focus on it
+      settings.frontmost = true
+
+      // Wait for System Settings window appearing
+      delay(0.5)
+
+      // Reveal VPN panel
+      settings.menuBars[0].menuBarItems["View"].menus["View"].menuItems["VPN"].click()
+
+      // Wait for panel switching
+      delay(0.5)
+
+      // check the Speak item under the pointer checkbox
+      const areas = settings.windows[0].groups[0].splitterGroups[0].groups[1].groups[0].scrollAreas[0]
+      let idx = -1
+      for (let i = 0; i< areas.groups.length; i++) {
+        let g = areas.groups[i]
+        try {
+          g.checkboxes[vpnName].value()
+          idx = i
+        } catch(error) {
+          // ignore the error
+        }
+      }
+
+      if (idx > -1) {
+        const checkbox = areas.groups[idx].checkboxes[vpnName]
+        const button = areas.groups[idx].buttons[0]
+        if (button !== null) {
+          button.click()
+        }
+        
+        delay(0.5)
+        
+        const sectionArea = settings.windows[0].sheets[0].groups[0].splitterGroups[0].groups[0]
+        const dialogArea = settings.windows[0].sheets[0].groups[0].splitterGroups[0].groups[1]
+        const authArea = dialogArea.scrollAreas[0].groups[2]
+        
+        const passwordField = authArea.textFields[1]
+        const lastPass = passwordField.value()
+        if (lastPass === password) {
+          const cancelButton = dialogArea.buttons[1]
+          okButton.click()
+        } else {
+          passwordField.focused = true
+          passwordField.value = password
+          const okButton = dialogArea.buttons[2]
+          okButton.click()
+        }
+        delay(0.5)
+        if (checkbox.value() === 0) {
+          checkbox.click()
+        }
+      }
+
+      settings.quit()
+    }
+    connectVpn("$osx_vpn_name", "$password", "$autofill")
+EOF
+}
+
 version_lte() {
     [  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
 }
@@ -261,11 +350,14 @@ function lazy-connect() {
     fzf --height=10 --ansi --reverse --query "$*" --select-1)
 
   mac_version=$(sw_vers -productVersion)
+  is_less_than_ventura=$(version_lt $mac_version 13.0 && echo "yes" || echo "no")
   is_less_than_mojave=$(version_lt $mac_version 10.14 && echo "yes" || echo "no")
   if [ $is_less_than_mojave = "yes" ]; then
     [ -z "$vpn_name" ] || _lazy_connect "$vpn_name" "$secret" "$autofill"
-  else
+  elif [ $is_less_than_ventura = "yes" ]; then
     [ -z "$vpn_name" ] || _lazy_connect_mojave "$vpn_name" "$secret" "$autofill"
+  else
+    [ -z "$vpn_name" ] || _lazy_connect_ventura "$vpn_name" "$secret" "$autofill"
   fi
 
 }
