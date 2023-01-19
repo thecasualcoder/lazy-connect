@@ -229,6 +229,17 @@ function _lazy_connect_ventura(){
   fi
   
   osascript -l JavaScript > /dev/null <<-EOF
+    function findGroupIndex(vpnName, areas) {
+      let idx = -1
+      for (let i = 0; i< areas.groups.length; i++) {
+        let g = areas.groups[i]
+        if (g.staticTexts[0].value() === vpnName) {
+          idx = i
+          break
+        }
+      }
+      return idx
+    }
     function connectVpn(vpnName, password, autofill) {
       // Reveal System Settings
       const app = Application("System Settings")
@@ -247,21 +258,12 @@ function _lazy_connect_ventura(){
       // Wait for panel switching
       delay(0.5)
 
-      // check the Speak item under the pointer checkbox
+      // check the vpn name
       const areas = settings.windows[0].groups[0].splitterGroups[0].groups[1].groups[0].scrollAreas[0]
-      let idx = -1
-      for (let i = 0; i< areas.groups.length; i++) {
-        let g = areas.groups[i]
-        try {
-          g.checkboxes[vpnName].value()
-          idx = i
-        } catch(error) {
-          // ignore the error
-        }
-      }
+      let idx = findGroupIndex(vpnName, areas)
 
-      if (idx > -1) {
-        const checkbox = areas.groups[idx].checkboxes[vpnName]
+      let checkbox = areas.groups[idx].checkboxes[0]
+      if (idx > -1 && checkbox.value() === 0) {
         const button = areas.groups[idx].buttons[0]
         if (button !== null) {
           button.click()
@@ -269,27 +271,32 @@ function _lazy_connect_ventura(){
         
         delay(0.5)
         
-        const sectionArea = settings.windows[0].sheets[0].groups[0].splitterGroups[0].groups[0]
-        const dialogArea = settings.windows[0].sheets[0].groups[0].splitterGroups[0].groups[1]
+        const sheet = settings.windows[0].sheets[0]
+        const dialogArea = sheet.groups[0].splitterGroups[0].groups[1]
         const authArea = dialogArea.scrollAreas[0].groups[2]
-        
-        const passwordField = authArea.textFields[1]
-        const lastPass = passwordField.value()
-        if (lastPass === password) {
-          const cancelButton = dialogArea.buttons[1]
-          cancelButton.click()
-        } else {
-          passwordField.focused = true
-          passwordField.value = password
-          const okButton = dialogArea.buttons[2]
-          okButton.click()
-        }
-        delay(0.5)
-        if (checkbox.value() === 0) {
-          checkbox.click()
-        }
-      }
 
+        const passwordField = authArea.textFields[1]
+        passwordField.focused = true
+        passwordField.value = password
+        passwordField.focused = false
+
+        try {
+          let ok = dialogArea.buttons[2]
+          if (ok.enabled()) {
+            ok.click()
+          } else {
+            throw "Could not OK"
+          }
+        } catch (e) {
+          let cancel = dialogArea.buttons[1]
+          if (cancel.enabled()) {
+            cancel.click()
+          }
+        }
+        
+        delay(0.5)
+        checkbox.click()
+      }
       app.quit()
     }
     connectVpn("$osx_vpn_name", "$password", "$autofill")
