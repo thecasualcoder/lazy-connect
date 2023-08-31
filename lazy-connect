@@ -280,6 +280,9 @@ function _lazy_connect_ventura(){
         passwordField.value = password
         passwordField.focused = false
 
+        const userField = authArea.textFields[0]
+        userField.focused = true
+
         try {
           let ok = dialogArea.buttons[2]
           if (ok.enabled()) {
