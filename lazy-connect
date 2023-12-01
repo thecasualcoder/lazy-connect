@@ -170,8 +170,8 @@ function _lazy_connect_mojave() {
         tell application "System Events"
             tell process "System Preferences"
                 tell window 1
+                    delay 1
                     repeat with r in rows of table 1 of scroll area 1
-
                         if (value of attribute "AXValue" of static text 1 of r as string) is equal to "$osx_vpn_name" then
                             select r
                         end if
@@ -202,6 +202,180 @@ function _lazy_connect_mojave() {
     end tell
     end connectVpn
 
+    connectVpn("$osx_vpn_name", "$password", "$autofill")
+EOF
+}
+
+function _lazy_connect_ventura(){
+  vpn_name=$1
+  osx_vpn_name="${vpn_name/Connect /}"
+  
+  _lazy_connect_get_totp $2
+  local autofill=$3
+
+  if [ -z "$password" ]; then
+    case $TOTP_MODE in
+    oathtool)
+      echo "Error: Unable to generate otp using oathtool."
+      return 1
+      ;;
+    yubikey)
+      echo "Error: No YubiKey found."
+      return 1
+      ;;
+    esac
+  elif [ "$autofill" == "false" ]; then
+    echo -n "$password" | pbcopy
+  fi
+  
+  osascript -l JavaScript > /dev/null <<-EOF
+    function findGroupIndex(vpnName, areas) {
+      let idx = -1
+      for (let i = 0; i< areas.groups.length; i++) {
+        let g = areas.groups[i]
+        if (g.staticTexts[0].value() === vpnName) {
+          idx = i
+          break
+        }
+      }
+      return idx
+    }
+    function connectVpn(vpnName, password, autofill) {
+      // Reveal System Settings
+      const app = Application("System Settings")
+      app.reveal()
+      const settings = Application("System Events").applicationProcesses.byName("System Settings")
+
+      // Focus on it
+      settings.frontmost = true
+
+      // Wait for System Settings window appearing
+      delay(0.5)
+
+      // Reveal VPN panel
+      settings.menuBars[0].menuBarItems["View"].menus["View"].menuItems["VPN"].click()
+
+      // Wait for panel switching
+      delay(0.5)
+
+      // check the vpn name
+      const areas = settings.windows[0].groups[0].splitterGroups[0].groups[1].groups[0].scrollAreas[0]
+      let idx = findGroupIndex(vpnName, areas)
+
+      let checkbox = areas.groups[idx].checkboxes[0]
+      if (idx > -1 && checkbox.value() === 0) {
+        const button = areas.groups[idx].buttons[0]
+        if (button !== null) {
+          button.click()
+        }
+        
+        delay(0.5)
+        
+        const sheet = settings.windows[0].sheets[0]
+        const dialogArea = sheet.groups[0].splitterGroups[0].groups[1]
+        const authArea = dialogArea.scrollAreas[0].groups[2]
+
+        const passwordField = authArea.textFields[1]
+        passwordField.focused = true
+        passwordField.value = password
+        passwordField.focused = false
+
+        const userField = authArea.textFields[0]
+        userField.focused = true
+
+        try {
+          let ok = dialogArea.buttons[2]
+          if (ok.enabled()) {
+            ok.click()
+          } else {
+            throw "Could not OK"
+          }
+        } catch (e) {
+          let cancel = dialogArea.buttons[1]
+          if (cancel.enabled()) {
+            cancel.click()
+          }
+        }
+        
+        delay(0.5)
+        checkbox.click()
+      }
+      app.quit()
+    }
+    connectVpn("$osx_vpn_name", "$password", "$autofill")
+EOF
+}
+
+function _lazy_connect_sonoma(){
+  vpn_name=$1
+  osx_vpn_name="${vpn_name/Connect /}"
+  
+  _lazy_connect_get_totp $2
+  local autofill=$3
+
+  if [ -z "$password" ]; then
+    case $TOTP_MODE in
+    oathtool)
+      echo "Error: Unable to generate otp using oathtool."
+      return 1
+      ;;
+    yubikey)
+      echo "Error: No YubiKey found."
+      return 1
+      ;;
+    esac
+  elif [ "$autofill" == "false" ]; then
+    echo -n "$password" | pbcopy
+  fi
+  
+  osascript -l JavaScript > /dev/null <<-EOF
+    function findSwitch(vpnName, areas) {
+      let idx = -1
+      for (let i = 0; i< areas.staticTexts.length; i++) {
+        let text = areas.staticTexts[i]
+        if (text.value() == vpnName) {
+          idx = i
+          break
+        }
+      }
+      return idx/2
+    }
+    function connectVpn(vpnName, password, autofill) {
+      // Reveal System Settings
+      const app = Application("System Settings")
+      app.reveal()
+      const settings = Application("System Events").applicationProcesses.byName("System Settings")
+
+      // Focus on it
+      settings.frontmost = true
+
+      // Wait for System Settings window appearing
+      delay(0.5)
+
+      // Reveal VPN panel
+      settings.menuBars[0].menuBarItems["View"].menus["View"].menuItems["VPN"].click()
+
+      // Wait for panel switching
+      delay(0.5)
+
+      // check the vpn name
+      const areas = settings.windows[0].groups[0].splitterGroups[0].groups[1].groups[0].scrollAreas[0].groups[0]
+      let idx = findSwitch(vpnName, areas)
+      let s = areas.checkboxes[idx]
+      s.click()
+      delay(1)
+      const notif = Application("System Events").applicationProcesses.byName("UserNotificationCenter")
+      if (notif !== undefined && notif !== null) {
+        const w = notif.windows[0]
+        if (w !== undefined && w !== null) {
+          const passwordField = w.textFields[0]
+          passwordField.value = password
+          const okButton = w.buttons[1]
+          okButton.click()
+        }
+      }
+      app.quit()
+    }
     connectVpn("$osx_vpn_name", "$password", "$autofill")
 EOF
 }
@@ -261,11 +435,17 @@ function lazy-connect() {
     fzf --height=10 --ansi --reverse --query "$*" --select-1)
 
   mac_version=$(sw_vers -productVersion)
+  is_less_than_sonoma=$(version_lt $mac_version 14.0 && echo "yes" || echo "no")
+  is_less_than_ventura=$(version_lt $mac_version 13.0 && echo "yes" || echo "no")
   is_less_than_mojave=$(version_lt $mac_version 10.14 && echo "yes" || echo "no")
   if [ $is_less_than_mojave = "yes" ]; then
     [ -z "$vpn_name" ] || _lazy_connect "$vpn_name" "$secret" "$autofill"
-  else
+  elif [ $is_less_than_ventura = "yes" ]; then
     [ -z "$vpn_name" ] || _lazy_connect_mojave "$vpn_name" "$secret" "$autofill"
+  elif [ $is_less_than_sonoma = "yes" ]; then
+    [ -z "$vpn_name" ] || _lazy_connect_ventura "$vpn_name" "$secret" "$autofill"
+  else
+    [ -z "$vpn_name" ] || _lazy_connect_sonoma "$vpn_name" "$secret" "$autofill"
   fi
 
 }
